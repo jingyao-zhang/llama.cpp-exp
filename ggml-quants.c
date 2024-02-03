@@ -3675,9 +3675,67 @@ static inline __m128i get_scale_shuffle(int i) {
 }
 #endif
 
+#define MAX_RECORDS 1000
+#define START_PRINTING_AFTER 28500000
+
+typedef struct {
+    int n;      // Stores the value of n
+    int count;  // Counts how many times n has occurred
+} NCount;
+
+static NCount nCounts[MAX_RECORDS];
+static int nCountsSize = 0;
+static bool isInitialized = false;
+static long long totalCallCount = 0;  // Track the total number of calls
+
+void ensureInitialized() {
+    if (!isInitialized) {
+        for (int i = 0; i < MAX_RECORDS; i++) {
+            nCounts[i].n = -1;  // Use -1 to indicate unused entries
+            nCounts[i].count = 0;
+        }
+        isInitialized = true;
+    }
+}
+
+void printNCounts() {
+    for (int i = 0; i < nCountsSize; i++) {
+        if (nCounts[i].n != -1) {
+            printf("n = %d, count = %d\n", nCounts[i].n, nCounts[i].count);
+        }
+    }
+}
+
+void updateNCount(int n) {
+    ensureInitialized();  // Ensure the data structure is initialized
+
+    // Increment total call count
+    totalCallCount++;
+
+    for (int i = 0; i < MAX_RECORDS; i++) {
+        if (nCounts[i].n == n) {
+            nCounts[i].count++;
+            break;
+        } else if (nCounts[i].n == -1) {
+            nCounts[i].n = n;
+            nCounts[i].count = 1;
+            if (i == nCountsSize) nCountsSize++;
+            break;
+        }
+    }
+
+    // Print statistics every time after START_PRINTING_AFTER threshold is reached
+    if (totalCallCount > START_PRINTING_AFTER) {
+        printNCounts();
+    }
+}
+
+
 void ggml_vec_dot_q4_0_q8_0(int n, float * restrict s, const void * restrict vx, const void * restrict vy) {
     const int qk = QK8_0;
     const int nb = n / qk;
+
+    updateNCount(n);
 
     assert(n % qk == 0);
 
