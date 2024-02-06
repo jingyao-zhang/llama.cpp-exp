@@ -2495,7 +2495,7 @@ void ggml_vec_dot_q4_0_q8_0(int n, float * restrict s, const void * restrict vx,
     const int qk = QK8_0;
     const int nb = n / qk;
 
-    updateNCount(n);
+    // updateNCount(n);
 
     assert(n % qk == 0);
 
