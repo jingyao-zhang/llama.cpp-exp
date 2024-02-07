@@ -190,6 +190,8 @@ int main(int argc, char ** argv) {
         for (int32_t i = 0; i < n_tokens_system; ++i) {
             llama_batch_add(batch, tokens_system[i], i, { 0 }, false);
         }
+        // printf("batch.n_tokens = %d\n", batch.n_tokens);
+        // printf("tokens_system[0] = %d\n", tokens_system[0]);
 
         if (llama_decode(ctx, batch) != 0) {
             LOG_TEE("%s: llama_decode() failed\n", __func__);
@@ -206,6 +208,7 @@ int main(int argc, char ** argv) {
 
     LOG_TEE("Processing requests ...\n\n");
 
+    printf("dump_kv_cache = %d\n", dump_kv_cache);
     while (true) {
         if (dump_kv_cache) {
             llama_kv_cache_view_update(ctx, &kvc_view);
@@ -245,7 +248,7 @@ int main(int argc, char ** argv) {
                     client.t_start_prompt = ggml_time_us();
                     client.t_start_gen    = 0;
 
-                    client.input    = k_prompts[rand() % k_prompts.size()];
+                    client.input    = k_prompts[rand() % k_prompts.size()]; // reason why duplicated prompts show up
                     client.prompt   = client.input + "\nAssistant:";
                     client.response = "";
 
@@ -254,10 +257,12 @@ int main(int argc, char ** argv) {
                     // do not prepend BOS because we have a system prompt!
                     std::vector<llama_token> tokens_prompt;
                     tokens_prompt = ::llama_tokenize(ctx, client.prompt, false);
+                    printf("tokens_prompt.size() = %d\n", tokens_prompt.size());
 
                     for (size_t i = 0; i < tokens_prompt.size(); ++i) {
                         llama_batch_add(batch, tokens_prompt[i], i + n_tokens_system, { client.id }, false);
                     }
+                    printf("batch.n_tokens = %d\n", batch.n_tokens);
 
                     // extract the logits only for the last token
                     if (batch.n_tokens > 0) {
