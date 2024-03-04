@@ -1170,8 +1170,10 @@ std::vector<llama_token> llama_tokenize(
                         bool   special) {
     // upper limit for the number of tokens
     int n_tokens = text.length() + add_bos;
+    // printf("n_tokens: %d\n", n_tokens);
     std::vector<llama_token> result(n_tokens);
     n_tokens = llama_tokenize(model, text.data(), text.length(), result.data(), result.size(), add_bos, special);
+    // printf("n_tokens 2: %d\n", n_tokens);
     if (n_tokens < 0) {
         result.resize(-n_tokens);
         int check = llama_tokenize(model, text.data(), text.length(), result.data(), result.size(), add_bos, special);

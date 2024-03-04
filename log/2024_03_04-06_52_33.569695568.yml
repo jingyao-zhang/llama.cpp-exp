@@ -1,0 +1,124 @@
+binary: main
+build_commit: b47879b
+build_number: 1706
+cpu_has_arm_fma: false
+cpu_has_avx: true
+cpu_has_avx2: true
+cpu_has_avx512: true
+cpu_has_avx512_vbmi: true
+cpu_has_avx512_vnni: true
+cpu_has_blas: false
+cpu_has_cublas: false
+cpu_has_clblast: false
+cpu_has_fma: true
+cpu_has_gpublas: false
+cpu_has_neon: false
+cpu_has_f16c: true
+cpu_has_fp16_va: false
+cpu_has_wasm_simd: false
+cpu_has_blas: false
+cpu_has_sse3: true
+cpu_has_vsx: false
+debug: false
+model_desc: llama 7B Q4_0
+n_vocab: 32000  # output size of the final layer, 32001 for some models
+optimize: true
+time: 2024_03_04-06_52_33.569695568
+
+###############
+# User Inputs #
+###############
+
+alias: unknown # default: unknown
+batch_size: 512 # default: 512
+cfg_negative_prompt:
+cfg_scale: 1.000000 # default: 1.0
+chunks: -1 # default: -1 (unlimited)
+color: false # default: false
+ctx_size: 0 # default: 512
+escape: true # default: false
+file: # never logged, see prompt instead. Can still be specified for input.
+frequency_penalty: 0.000000 # default: 0.0 
+grammar:
+grammar-file: # never logged, see grammar instead. Can still be specified for input.
+hellaswag: false # default: false
+hellaswag_tasks: 400 # default: 400
+ignore_eos: false # default: false
+in_prefix:
+in_prefix_bos: false # default: false
+in_suffix:
+instruct: false # default: false
+interactive: false # default: false
+interactive_first: false # default: false
+keep: 0 # default: 0
+logdir: log/ # default: unset (no logging)
+logit_bias:
+lora:
+lora_scaled:
+lora_base: 
+main_gpu: 0 # default: 0
+mirostat: 0 # default: 0 (disabled)
+mirostat_ent: 5.000000 # default: 5.0
+mirostat_lr: 0.100000 # default: 0.1
+mlock: false # default: false
+model: llama-2-7b.Q4_0.gguf # default: models/7B/ggml-model.bin
+model_draft:  # default:
+multiline_input: false # default: false
+n_gpu_layers: -1 # default: -1
+n_predict: 1 # default: -1 (unlimited)
+n_probs: 0 # only used by server binary, default: 0
+no_mmap: false # default: false
+no_mul_mat_q: false # default: false
+no_penalize_nl: false # default: false
+numa: false # default: false
+ppl_output_type: 0 # default: 0
+ppl_stride: 0 # default: 0
+presence_penalty: 0.000000 # default: 0.0
+prompt: |
+  Building a website can be done in 10 simple steps:
+prompt_cache: 
+prompt_cache_all: false # default: false
+prompt_cache_ro: false # default: false
+prompt_tokens: [1, 17166, 263, 4700, 508, 367, 2309, 297, 29871, 29896, 29900, 2560, 6576, 29901, 13, 14448, 29871, 29896, 29901]
+random_prompt: false # default: false
+repeat_penalty: 1.100000 # default: 1.1
+reverse_prompt:
+rope_freq_base: 0.000000 # default: 10000.0
+rope_freq_scale: 0.000000 # default: 1.0
+seed: 1709535144 # default: -1 (random seed)
+simple_io: false # default: false
+cont_batching: false # default: false
+temp: 0.800000 # default: 0.8
+tensor_split: [0.000000e+00]
+tfs: 1.000000 # default: 1.0
+threads: 1 # default: 8
+top_k: 40 # default: 40
+top_p: 0.950000 # default: 0.95
+min_p: 0.050000 # default: 0.0
+typical_p: 1.000000 # default: 1.0
+verbose_prompt: false # default: false
+
+######################
+# Generation Results #
+######################
+
+output: " Pick"
+output_tokens: [23868]
+
+###########
+# Timings #
+###########
+
+mst_eval: -nan  # ms / token during generation
+mst_p_eval: 397.04  # ms / token during prompt processing
+mst_sample: 0.21  # ms / token during sampling
+n_eval: 0  # number of tokens generated (excluding the first one)
+n_p_eval: 19  # number of tokens processed in batches at the beginning
+n_sample: 1  # number of sampled tokens
+t_eval_us: 0  # total microseconds spent generating tokens
+t_load_us: 1872245  # total microseconds spent loading the model
+t_p_eval_us: 7543853  # total microseconds spent prompt processing
+t_sample_us: 211  # total microseconds spent sampling
+ts_eval: -nan  # tokens / second during generation
+ts_p_eval: 2.52  # tokens / second during prompt processing
+ts_sample: 4739.34  # tokens / second during sampling
