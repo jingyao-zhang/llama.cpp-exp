@@ -1441,18 +1441,19 @@ int main(int argc, char ** argv) {
     }
 
     struct ggml_init_params lcparams;
-    lcparams.mem_size   = 1024ll*1024ll*1024ll;
+    // lcparams.mem_size   = 1024ll*1024ll*1024ll;
+    lcparams.mem_size   = 1024ll*1024ll*1024ll*32ll;
     lcparams.mem_buffer = NULL;
     lcparams.no_alloc   = false;
 
     struct llama_model model;
-    model.hparams.n_vocab = 8;
-    model.hparams.n_ctx   = 8;
-    model.hparams.n_embd  = 32;
-    model.hparams.n_mult  = 2;
-    model.hparams.n_head  = 8;
+    // model.hparams.n_vocab = 8;
+    // model.hparams.n_ctx   = 8;
+    // model.hparams.n_embd  = 32;
+    // model.hparams.n_mult  = 2;
+    // model.hparams.n_head  = 8;
     model.hparams.n_layer = 1;
-    model.hparams.n_rot   = std::min(16u, model.hparams.n_embd / model.hparams.n_head);
+    // model.hparams.n_rot   = std::min(16u, model.hparams.n_embd / model.hparams.n_head);
 
     // model.hparams.n_embd  = 32;
     // model.hparams.n_mult  = 2;
@@ -1500,7 +1501,7 @@ int main(int argc, char ** argv) {
 
     randomize_model_lora(&model_lora, 1337, 0.0f, 1.0f, -1.0f, +1.0f);
 */
-    int n_batch = 8;
+    int n_batch = 4;
     // key + value cache for the self attention
     struct llama_kv_cache kv_self;
     printf("init_kv_cache\n");
@@ -1508,10 +1509,11 @@ int main(int argc, char ** argv) {
     init_kv_cache(&kv_self, &model, n_batch);
     //init_kv_cache_lora(&kv_self, &model_lora);
 
-    size_t    compute_size = 1024ll*1024ll*1024ll;
+    // size_t    compute_size = 1024ll*1024ll*1024ll;
+    size_t    compute_size = 1024ll*1024ll*1024ll*32ll;
     uint8_t * compute_addr = new uint8_t[compute_size];
 
-    int n_examples = 256;
+    int n_examples = 1;
     int n_tokens = model.hparams.n_ctx;
     int n_vocab  = model.hparams.n_vocab;
 
@@ -1533,16 +1535,17 @@ int main(int argc, char ** argv) {
 
         int n_past = 0;
 
-        ggml_cgraph gf = {};
+        struct ggml_cgraph * gf = NULL;
+        gf = ggml_new_graph_custom(ctx0, LLAMA_TRAIN_MAX_NODES, true);
 
         get_example_targets_batch(ctx0, 64*ex+0,  tokens_input, targets);
 
-        struct ggml_tensor * logits = forward_batch(&model, &kv_self, ctx0, &gf, tokens_input, n_tokens, n_past, n_batch);
+        struct ggml_tensor * logits = forward_batch(&model, &kv_self, ctx0, gf, tokens_input, n_tokens, n_past, n_batch);
         // struct ggml_tensor * e = cross_entropy_loss(ctx0, targets, logits);
         struct ggml_tensor * e = square_error_loss(ctx0, targets, logits);
 
-        ggml_build_forward_expand(&gf, e);
-        ggml_graph_compute_helper(work_buffer, &gf, /*n_threads*/ 1);
+        ggml_build_forward_expand(gf, e);
+        ggml_graph_compute_helper(work_buffer, gf, /*n_threads*/ 1);
 
         float error_before_opt = ggml_get_f32_1d(e, 0);
 
@@ -1552,8 +1555,8 @@ int main(int argc, char ** argv) {
         opt_params_lbfgs.lbfgs.n_iter = 16;
         ggml_opt(ctx0, opt_params_lbfgs, e);
         //
-        ggml_build_forward_expand(&gf, e);
-        ggml_graph_compute_helper(work_buffer, &gf, /*n_threads*/ 1);
+        ggml_build_forward_expand(gf, e);
+        ggml_graph_compute_helper(work_buffer, gf, /*n_threads*/ 1);
 
         float error_after_opt = ggml_get_f32_1d(e, 0);
 
@@ -1575,7 +1578,7 @@ int main(int argc, char ** argv) {
     }
 
     {
-        int n_gen = 128;
+        int n_gen = 4;
         int sample_ctx = n_tokens-n_tokens/8;
 
         printf("Generating %d tokens.\n", n_gen);
@@ -1600,13 +1603,14 @@ int main(int argc, char ** argv) {
             };
             struct ggml_context * ctx0 = ggml_init(params);
 
-            ggml_cgraph gf = {};
+            struct ggml_cgraph * gf = NULL;
+            gf = ggml_new_graph_custom(ctx0, LLAMA_TRAIN_MAX_NODES, true);
 
             int n_past = 0;
-            struct ggml_tensor * logits = forward(&model, &kv_self, ctx0, &gf, tokens_input, sample_ctx, n_past);
+            struct ggml_tensor * logits = forward(&model, &kv_self, ctx0, gf, tokens_input, sample_ctx, n_past);
 
-            ggml_build_forward_expand(&gf, logits);
-            ggml_graph_compute_helper(work_buffer, &gf, /*n_threads*/ 1);
+            ggml_build_forward_expand(gf, logits);
+            ggml_graph_compute_helper(work_buffer, gf, /*n_threads*/ 1);
 
             struct ggml_tensor * best_samples = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, sample_ctx);
             struct ggml_tensor * probs        = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_vocab, sample_ctx);
