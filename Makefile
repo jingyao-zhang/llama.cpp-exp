@@ -14,17 +14,20 @@ TEST_TARGETS = \
 # Code coverage output files
 COV_TARGETS = *.gcno tests/*.gcno *.gcda tests/*.gcda *.gcov tests/*.gcov lcov-report gcovr-report
 
-ifndef UNAME_S
-UNAME_S := $(shell uname -s)
-endif
+#ifndef UNAME_S
+#UNAME_S := $(shell uname -s)
+#endif
 
-ifndef UNAME_P
-UNAME_P := $(shell uname -p)
-endif
+#ifndef UNAME_P
+#UNAME_P := $(shell uname -p)
+#endif
 
-ifndef UNAME_M
-UNAME_M := $(shell uname -m)
-endif
+#ifndef UNAME_M
+#UNAME_M := $(shell uname -m)
+#endif
+UNAME_S = linux
+UNAME_P = arm
+UNAME_M = aarch64
 
 # Mac OS + Arm can report x86_64
 # ref: https://github.com/ggerganov/whisper.cpp/issues/66#issuecomment-1282546789
@@ -96,6 +99,11 @@ CC	:= riscv64-unknown-linux-gnu-gcc
 CXX	:= riscv64-unknown-linux-gnu-g++
 endif
 
+ifdef ARM_CROSS_COMPILE
+CC	:= aarch64-linux-gnu-gcc-9
+CXX	:= aarch64-linux-gnu-g++-9
+endif
+
 #
 # Compile flags
 #
@@ -124,25 +132,25 @@ MK_CPPFLAGS += -D_XOPEN_SOURCE=600
 # Somehow in OpenBSD whenever POSIX conformance is specified
 # some string functions rely on locale_t availability,
 # which was introduced in POSIX.1-2008, forcing us to go higher
-ifeq ($(UNAME_S),OpenBSD)
-	MK_CPPFLAGS += -U_XOPEN_SOURCE -D_XOPEN_SOURCE=700
-endif
+#ifeq ($(UNAME_S),OpenBSD)
+#	MK_CPPFLAGS += -U_XOPEN_SOURCE -D_XOPEN_SOURCE=700
+#endif
 
 # Data types, macros and functions related to controlling CPU affinity and
 # some memory allocation are available on Linux through GNU extensions in libc
-ifeq ($(UNAME_S),Linux)
-	MK_CPPFLAGS += -D_GNU_SOURCE
-endif
+
+MK_CPPFLAGS += -D_GNU_SOURCE
+
 
 # RLIMIT_MEMLOCK came in BSD, is not specified in POSIX.1,
 # and on macOS its availability depends on enabling Darwin extensions
 # similarly on DragonFly, enabling BSD extensions is necessary
-ifeq ($(UNAME_S),Darwin)
-	MK_CPPFLAGS += -D_DARWIN_C_SOURCE
-endif
-ifeq ($(UNAME_S),DragonFly)
-	MK_CPPFLAGS += -D__BSD_VISIBLE
-endif
+#ifeq ($(UNAME_S),Darwin)
+#	MK_CPPFLAGS += -D_DARWIN_C_SOURCE
+#endif
+#ifeq ($(UNAME_S),DragonFly)
+#	MK_CPPFLAGS += -D__BSD_VISIBLE
+#endif
 
 # alloca is a non-standard interface that is not visible on BSDs when
 # POSIX conformance is specified, but not all of them provide a clean way
@@ -213,10 +221,10 @@ endif
 
 # OS specific
 # TODO: support Windows
-ifneq '' '$(filter $(UNAME_S),Linux Darwin FreeBSD NetBSD OpenBSD Haiku)'
-	MK_CFLAGS   += -pthread
-	MK_CXXFLAGS += -pthread
-endif
+#ifneq '' '$(filter $(UNAME_S),Linux Darwin FreeBSD NetBSD OpenBSD Haiku)'
+MK_CFLAGS   += -pthread # -march=armv8.2-a 
+MK_CXXFLAGS += -pthread # -march=armv8.2-a 
+#endif
 
 # detect Windows
 ifneq ($(findstring _NT,$(UNAME_S)),)
@@ -247,7 +255,12 @@ endif
 ifdef LLAMA_PERF
 	MK_CPPFLAGS += -DGGML_PERF
 endif
-
+ifdef LLAMA_PERF_MM
+	MK_CPPFLAGS += -DGGML_PERF_MM
+endif
+ifdef LLAMA_NDP
+	MK_CPPFLAGS += -DGGML_NDP
+endif
 # Architecture specific
 # TODO: probably these flags need to be tweaked on some architectures
 #       feel free to update the Makefile for your architecture and send a pull request or issue
@@ -283,8 +296,8 @@ ifneq ($(filter aarch64%,$(UNAME_M)),)
 	# Apple M1, M2, etc.
 	# Raspberry Pi 3, 4, Zero 2 (64-bit)
 	# Nvidia Jetson
-	MK_CFLAGS   += -mcpu=native
-	MK_CXXFLAGS += -mcpu=native
+	# MK_CFLAGS   += -mcpu=native
+	# MK_CXXFLAGS += -mcpu=native
 	JETSON_RELEASE_INFO = $(shell jetson_release)
 	ifdef JETSON_RELEASE_INFO
 		ifneq ($(filter TX2%,$(JETSON_RELEASE_INFO)),)
@@ -336,6 +349,9 @@ ifdef LLAMA_QKK_64
 	MK_CPPFLAGS += -DGGML_QKK_64
 endif
 
+ifdef LLAMA_GEM5
+	MK_LDFLAGS += -static -I ../arm.gem5.llama.cpp/NDPmulator/include/ ../arm.gem5.llama.cpp/NDPmulator/util/m5/src/abi/arm64/m5op.S
+endif 
 ifndef LLAMA_NO_ACCELERATE
 	# Mac OS - include Accelerate framework.
 	# `-framework Accelerate` works both with Apple Silicon and Mac Intel

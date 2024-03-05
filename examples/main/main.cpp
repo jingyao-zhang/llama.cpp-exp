@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+#include "/home/jzhan502/arm.gem5.llama.cpp/NDPmulator/include/gem5/m5ops.h"
+
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 #include <signal.h>
 #include <unistd.h>
@@ -595,23 +597,74 @@ int main(int argc, char ** argv) {
                 }
             }
 
-            for (int i = 0; i < (int) embd.size(); i += params.n_batch) {
+            // for (int i = 0; i < (int) embd.size(); i += params.n_batch) {
+            //     int n_eval = (int) embd.size() - i;
+            //     if (n_eval > params.n_batch) {
+            //         n_eval = params.n_batch;
+            //     }
+
+            //     LOG_TEE("eval: %s\n", LOG_TOKENS_TOSTR_PRETTY(ctx, embd).c_str());
+
+            //     if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
+            //         LOG_TEE("%s : failed to eval\n", __func__);
+            //         return 1;
+            //     }
+
+            //     n_past += n_eval;
+
+            //     LOG("n_past = %d\n", n_past);
+            // }
+            
+            {
+                int i = 0;
                 int n_eval = (int) embd.size() - i;
                 if (n_eval > params.n_batch) {
                     n_eval = params.n_batch;
                 }
 
-                LOG("eval: %s\n", LOG_TOKENS_TOSTR_PRETTY(ctx, embd).c_str());
+                LOG_TEE("eval: %s\n", LOG_TOKENS_TOSTR_PRETTY(ctx, embd).c_str());
+                
+                m5_work_begin(0, 0);
+                m5_reset_stats(0, 0);
 
-                if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
-                    LOG_TEE("%s : failed to eval\n", __func__);
-                    return 1;
-                }
+                llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0));
+
+                m5_work_end(0, 0);
+                m5_exit(0);
+
+                // if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
+                //     LOG_TEE("%s : failed to eval\n", __func__);
+                //     return 1;
+                // }
 
                 n_past += n_eval;
 
                 LOG("n_past = %d\n", n_past);
             }
+            
+            {
+                int i = params.n_batch;
+                int n_eval = (int) embd.size() - i;
+                if (n_eval > params.n_batch) {
+                    n_eval = params.n_batch;
+                }
+
+                LOG_TEE("eval: %s\n", LOG_TOKENS_TOSTR_PRETTY(ctx, embd).c_str());
+
+                m5_checkpoint(0, 0); // 在Part2开始时创建检查点
+                llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0));
+                m5_exit(0); // Part2 结束，退出仿真
+
+                // if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
+                //     LOG_TEE("%s : failed to eval\n", __func__);
+                //     return 1;
+                // }
+
+                n_past += n_eval;
+
+                LOG("n_past = %d\n", n_past);
+            }
+            
 
             if (!embd.empty() && !path_session.empty()) {
                 session_tokens.insert(session_tokens.end(), embd.begin(), embd.end());
