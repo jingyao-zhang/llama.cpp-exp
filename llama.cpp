@@ -1717,6 +1717,8 @@ static bool llama_kv_cache_find_slot(
     uint32_t n_tested = 0;
 
     while (true) {
+        // printf("cache.head=%d\n", cache.head);
+        // printf("n_tokens=%d\n", n_tokens);
         if (cache.head + n_tokens > n_ctx) {
             n_tested += n_ctx - cache.head;
             cache.head = 0;
@@ -1736,8 +1738,13 @@ static bool llama_kv_cache_find_slot(
         if (found) {
             break;
         }
+        // printf("n_tested=%d\n", n_tested);
+        // printf("n_ctx=%d\n", n_ctx);
 
         if (n_tested >= n_ctx) {
+            // printf("n_tested=%d\n", n_tested);
+            // printf("n_ctx=%d\n", n_ctx);
+            // printf("ssssss\n");
             //LLAMA_LOG_ERROR("%s: failed to find a slot for %d tokens\n", __func__, n_tokens);
             return false;
         }
@@ -2123,6 +2130,7 @@ struct llama_model_loader {
 
         n_kv      = gguf_get_n_kv(ctx_gguf);
         n_tensors = gguf_get_n_tensors(ctx_gguf);
+        // n_tensors = 12;
 
         fver = (enum llama_fver ) gguf_get_version(ctx_gguf);
 
@@ -2597,6 +2605,7 @@ static void llm_load_hparams(
     ml.get_key  (LLM_KV_FEED_FORWARD_LENGTH,  hparams.n_ff);
     ml.get_key  (LLM_KV_ATTENTION_HEAD_COUNT, hparams.n_head);
     ml.get_key  (LLM_KV_BLOCK_COUNT,          hparams.n_layer);
+    // hparams.n_layer = 1;
     ml.get_key  (LLM_KV_EXPERT_COUNT,         hparams.n_expert,      false);
     ml.get_key  (LLM_KV_EXPERT_USED_COUNT,    hparams.n_expert_used, false);
 
@@ -3851,6 +3860,7 @@ static int llama_model_load(const std::string & fname, llama_model & model, cons
         }
     } catch (const std::exception & err) {
         LLAMA_LOG_ERROR("error loading model: %s\n", err.what());
+        // printf("error loading model: %s\n", err.what());
         return -1;
     }
 
@@ -6357,11 +6367,14 @@ static int llama_decode_internal(
 
     // if we have enough unused cells before the current head ->
     //   better to start searching from the beginning of the cache, hoping to fill it
+    // printf("kv_self.head = %5d, kv_self.used = %5d, kv_self.size = %5d\n", kv_self.head, kv_self.used, kv_self.size); 
+    // printf("2*n_tokens = %5d\n", 2*n_tokens);
     if (kv_self.head > kv_self.used + 2*n_tokens) {
         kv_self.head = 0;
     }
 
     if (!llama_kv_cache_find_slot(kv_self, batch)) {
+        // printf("!!!!J!!!\n");
         return 1;
     }
 
@@ -9347,6 +9360,7 @@ struct llama_model * llama_load_model_from_file(
 
     int status = llama_model_load(path_model, *model, params);
     GGML_ASSERT(status <= 0);
+    // printf("status: %d\n", status);
     if (status < 0) {
         if (status == -1) {
             LLAMA_LOG_ERROR("%s: failed to load model\n", __func__);
